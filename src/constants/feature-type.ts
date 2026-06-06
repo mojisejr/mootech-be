@@ -1,0 +1,6 @@
+enum FEATURE_TYPE {
+  AI_FORTUNE = 'AI_FORTUNE',
+  AI_GENERAL = 'AI_GENERAL',
+}
+
+export { FEATURE_TYPE };
