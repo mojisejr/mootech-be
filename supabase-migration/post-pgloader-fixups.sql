@@ -55,3 +55,14 @@ ALTER TABLE "user"                 ALTER COLUMN is_refresh            TYPE boole
 CREATE INDEX IF NOT EXISTS idx_payment_user_id        ON payment        (user_id);
 CREATE INDEX IF NOT EXISTS idx_member_payment_user_id ON member_payment (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_matching_user_id  ON user_matching  (user_id);
+
+-- (3) column-name casing: MySQL had camelCase `createAt` (case-insensitive); pgloader
+--     lowercased it to `createat`, but the TypeORM entities query `"createAt"` (quoted,
+--     case-sensitive on Postgres) -> "column does not exist". Rename back to match entities.
+ALTER TABLE log_activity   RENAME COLUMN createat TO "createAt";
+ALTER TABLE log_calculate  RENAME COLUMN createat TO "createAt";
+ALTER TABLE log_love_mate  RENAME COLUMN createat TO "createAt";
+ALTER TABLE log_matching   RENAME COLUMN createat TO "createAt";
+ALTER TABLE log_save_image RENAME COLUMN createat TO "createAt";
+ALTER TABLE log_survey     RENAME COLUMN createat TO "createAt";
+ALTER TABLE log_work_vibe  RENAME COLUMN createat TO "createAt";
