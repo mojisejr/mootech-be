@@ -35,3 +35,7 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # .env*
+# secrets — never commit (added during Supabase migration)
+.env
+.env.local
+.env.*.local

@@ -69,13 +69,15 @@ import { MemberPayAsUseModule } from './member-pay-as-use/member-pay-as-use.modu
     TypeOrmModule.forRootAsync({
       imports: [DbConfigModule],
       useFactory: (dbConfigService: DbConfigService) => ({
-        type: 'mysql',
+        type: 'postgres',
         host: dbConfigService.host,
         port: dbConfigService.port,
         username: dbConfigService.username,
         password: dbConfigService.password,
         database: dbConfigService.database,
-        synchronize: true, // dbConfigService.synchronize,
+        // NEVER hardcode true on serverless/Supabase — read from DB_SYNCHRONIZE (must be false)
+        synchronize: dbConfigService.synchronize,
+        ssl: { rejectUnauthorized: false }, // Supabase requires SSL (self-signed chain)
         logging: dbConfigService.logging,
         autoLoadEntities: true,
         // Bug typeorm synchronize resolve path with Typescript
