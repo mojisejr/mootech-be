@@ -9,6 +9,6 @@ async function bootstrap() {
   app.use(json({ limit: '100mb' }));
 
   app.use('/callback/omise', express.raw({ type: 'application/json' }));
-  await app.listen(3000);
+  await app.listen(process.env.APP_PORT || 3000);
 }
 bootstrap();
