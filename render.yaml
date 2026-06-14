@@ -1,0 +1,84 @@
+# Render Blueprint for mootech-be (NestJS, Docker) → our Supabase.
+# Deploy: Render dashboard → New + → Blueprint → pick this repo.
+# Docker web services can't be created via the Render MCP API, so the service
+# is created here (Blueprint) or manually on the dashboard. Secret values are
+# `sync: false` (NOT stored in git) — set after creation via MCP / dashboard.
+#
+# GUARDRAIL: DB_* must point at OUR Supabase, never the old team's DB.
+services:
+  - type: web
+    name: mootech-be
+    runtime: docker
+    repo: https://github.com/mojisejr/mootech-be
+    branch: feat/supabase-repoint
+    region: singapore # closest to Supabase ap-southeast-1
+    plan: starter # canvas/image-gen needs memory; bump if build OOMs
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # --- non-secret config ---
+      - key: ENVIRONMENT
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: DB_TYPE
+        value: postgres
+      - key: DB_SYNCHRONIZE
+        value: "false"
+      - key: AWS_S3_SIGNED_URL_TIMEOUT
+        value: "3600"
+      - key: SMS_8X8_ENCODING
+        value: AUTO
+      # MIGRATION_ENABLED intentionally unset → POST /migration stays 404.
+      # --- secrets / environment-specific (set via MCP or dashboard) ---
+      - key: DB_HOST # our Supabase host ONLY
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_DATABASE
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_ROOT_BUCKET
+        sync: false
+      - key: AWS_S3_THUMB_ROOT_BUCKET
+        sync: false
+      - key: AWS_S3_ENDPOINT
+        sync: false
+      - key: AWS_S3_ROOT_DIRECTORY
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM_EMAIL
+        sync: false
+      - key: SENDGRID_FROM_NAME
+        sync: false
+      - key: SMS_8X8_HOST
+        sync: false
+      - key: SMS_8X8_TOKEN
+        sync: false
+      - key: SMS_8X8_TOPIC
+        sync: false
+      - key: LINE_HOST
+        sync: false
+      - key: LINE_TOKEN
+        sync: false
+      - key: OMISE_PUBLIC_KEY
+        sync: false
+      - key: OMISE_SECRET_KEY
+        sync: false
+      - key: OMISE_RETURN_URI
+        sync: false
+      - key: DIFY_API_KEY
+        sync: false
+      - key: DIFY_API_URL
+        sync: false
+      - key: CORS_ORIGINS # set to the deployed fe origin in Phase 3
+        sync: false

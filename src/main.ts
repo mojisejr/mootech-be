@@ -15,6 +15,10 @@ async function bootstrap() {
   app.use(json({ limit: '100mb' }));
 
   app.use('/callback/omise', express.raw({ type: 'application/json' }));
-  await app.listen(process.env.APP_PORT || 3000);
+  // Honor the port the platform injects (Render sets PORT). Fall back to
+  // APP_PORT for existing setups, then 3000 for local dev. Bind 0.0.0.0 so
+  // the container is reachable on Render.
+  const port = process.env.PORT || process.env.APP_PORT || 3000;
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
