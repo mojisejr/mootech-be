@@ -14,7 +14,7 @@ export class ProductService {
   async getProduct(input: ProductGetInput): Promise<any> {
     const query = await this.productRepository.createQueryBuilder('product');
     query.where('is_show = true');
-    query.andWhere('product_type != ""');
+    query.andWhere("product_type != ''");
     if (input.page == 'LOVE') {
       if (input.percentage_love > 50) {
         query.andWhere(
