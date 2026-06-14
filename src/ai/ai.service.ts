@@ -215,7 +215,6 @@ export class AiService {
       message: message,
     };
 
-    console.log(payload);
     try {
       const response = await firstValueFrom(
         this.httpService.post(url, payload, {
@@ -266,7 +265,8 @@ export class AiService {
     jsonString: string,
     is_streaming: boolean,
   ) {
-    const url = 'https://dify.chatify.cloud/v1/chat-messages';
+    const url =
+      process.env.DIFY_API_URL || 'https://dify.chatify.cloud/v1/chat-messages';
 
     const inputs = {
       baziProfile: jsonString,
@@ -279,19 +279,16 @@ export class AiService {
       response_mode: is_streaming ? 'streaming' : 'blocking', // blocking, streaming
       user: user_id,
     };
-    console.log(payload);
     try {
       const response = await firstValueFrom(
         this.httpService.post(url, payload, {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer app-lvf2kEETOHejp5dIuUNYI2sn',
+            Authorization: `Bearer ${process.env.DIFY_API_KEY}`,
           },
           timeout: 60000, // กัน API ค้าง
         }),
       );
-      console.log('response.data:');
-      console.log(response.data);
       return response.data;
     } catch (error) {
       // 👉 กรณี API ตอบ error (4xx / 5xx)
@@ -331,7 +328,8 @@ export class AiService {
     conversation_id: string,
     jsonString: string,
   ) {
-    const url = 'https://dify.chatify.cloud/v1/chat-messages';
+    const url =
+      process.env.DIFY_API_URL || 'https://dify.chatify.cloud/v1/chat-messages';
 
     const payload = {
       inputs: { baziProfile: jsonString },
@@ -347,7 +345,7 @@ export class AiService {
         this.httpService.post(url, payload, {
           responseType: 'stream',
           headers: {
-            Authorization: 'Bearer app-lvf2kEETOHejp5dIuUNYI2sn',
+            Authorization: `Bearer ${process.env.DIFY_API_KEY}`,
             'Content-Type': 'application/json',
           },
           timeout: 60000,

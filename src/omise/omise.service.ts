@@ -104,7 +104,6 @@ export class OmiseService {
     payment_by: string,
     package_code: string,
   ) {
-    console.log('chargeCard', amount, token);
     const orderId = Array.from({ length: 10 }, () => randomInt(0, 10)).join('');
 
     const packageInfo = await this.paymentPackageService.getPaymentPackage({
@@ -133,7 +132,6 @@ export class OmiseService {
           planName: planInfo?.description,
         },
       });
-      console.log('chargeCard', result);
       // SAVE TO PAYMENT
       /*
         - PAYMENT_BY
@@ -163,16 +161,8 @@ export class OmiseService {
   }
 
   async webHookOmise(@Body() event: any) {
-    console.log('webHookOmise:');
-    console.log(event);
-    // console.log(event.object);
-    // console.log(event.data);
-    // console.log(event.data.object);
-    console.log('event.key', event.key);
     if (event.key === 'charge.complete') {
       const charge = event.data;
-      console.log('charge:');
-      console.log(charge);
       const orderId = charge.metadata?.orderId;
 
       if (charge.status === 'successful' && charge.paid === true) {
@@ -180,8 +170,6 @@ export class OmiseService {
         const resultPayment = await this.paymentService.getPaymentByOrderId(
           orderId,
         );
-        console.log('resultPayment');
-        console.log(resultPayment);
         await this.paymentService.approve({
           approve_by: '',
           payment_id: resultPayment.id,
