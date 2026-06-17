@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { ObjectStorageController } from './object-storage.controller';
 import { ObjectStorageService } from './object-storage.service';
 import { MomentService } from 'src/utils/MomentService';
-import { AwsConfigModule } from 'src/config/aws';
+import { SupabaseConfigModule } from 'src/config/supabase';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({
-  imports: [AwsConfigModule, HttpModule],
+  imports: [SupabaseConfigModule, HttpModule],
   providers: [ObjectStorageService, MomentService],
   exports: [ObjectStorageService],
   controllers: [ObjectStorageController],

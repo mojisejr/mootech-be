@@ -29,6 +29,7 @@
     "@nestjs/schedule": "^2.2.3",
     "@nestjs/typeorm": "^10.0.2",
     "@sendgrid/mail": "^8.1.6",
+    "@supabase/supabase-js": "^2.108.2",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^6.0.0",
     "canvas": "^3.2.0",
