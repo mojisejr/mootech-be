@@ -1,5 +1,4 @@
-FROM node:22-alpine
-# bumped 19→22: @supabase/supabase-js needs native WebSocket (Node 22 LTS has it; 19 is EOL)
+FROM node:19-alpine
 # FROM node:12-alpine
 
 WORKDIR /app

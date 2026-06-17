@@ -28,6 +28,13 @@ export class ObjectStorageService {
   ) {}
 
   onModuleInit() {
+    // @supabase/supabase-js (realtime-js) needs a global WebSocket. The Render
+    // image runs Node 19 (no native WebSocket), so polyfill with `ws` before
+    // createClient to avoid "Node.js 19 detected without native WebSocket support".
+    if (typeof (globalThis as any).WebSocket === 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      (globalThis as any).WebSocket = require('ws');
+    }
     this.bucket = this.supabaseConfigService.bucket;
     this.supabase = createClient(
       this.supabaseConfigService.projectUrl,
