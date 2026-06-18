@@ -6,6 +6,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "env:dev": "cp .env.dev.local .env && echo 'active .env -> DEV' && grep '^SUPABASE_PROJECT_URL=' .env",
+    "env:prod": "cp .env.prod.local .env && echo 'active .env -> PROD' && grep '^SUPABASE_PROJECT_URL=' .env",
+    "env:which": "grep '^SUPABASE_PROJECT_URL=\\|^DB_HOST=' .env",
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
