@@ -30,7 +30,7 @@ export class OmiseService {
       amount: amount * 100, // หน่วยเป็น "สตางค์"
       currency: 'thb',
       card: token,
-      return_uri: 'http://localhost:3001/payment/redirect',
+      return_uri: this.omiseConfigService.returnUri,
     });
   }
 

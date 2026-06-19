@@ -11,58 +11,58 @@
 --   S3:            https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/
 --   phoenix-stark: https://cdn.phoenix-stark.com/mootech/      (CloudFront over the same bucket)
 -- New base:
---   https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/
+--   https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/
 
 -- ============ S3 base -> Supabase ============
 UPDATE "user" SET picture_url = REPLACE(picture_url,
   'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE picture_url LIKE 'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/%';
 
 UPDATE "user" SET share_img_profile_url = REPLACE(share_img_profile_url,
   'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE share_img_profile_url LIKE 'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/%';
 
 UPDATE user_provider SET picture_url = REPLACE(picture_url,
   'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE picture_url LIKE 'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/%';
 
 UPDATE member_with_friend SET picture_url = REPLACE(picture_url,
   'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE picture_url LIKE 'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/%';
 
 UPDATE fortune_telling SET image = REPLACE(image,
   'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE image LIKE 'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/%';
 
 UPDATE heavenly_spirit_card SET image = REPLACE(image,
   'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE image LIKE 'https://s3-ps-cdn.s3.ap-southeast-1.amazonaws.com/mootech/%';
 
 -- ============ phoenix-stark CDN base -> Supabase (same underlying bucket) ============
 UPDATE mascot SET url = REPLACE(url,
   'https://cdn.phoenix-stark.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE url LIKE 'https://cdn.phoenix-stark.com/mootech/%';
 
 UPDATE mascot_v2 SET url = REPLACE(url,
   'https://cdn.phoenix-stark.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE url LIKE 'https://cdn.phoenix-stark.com/mootech/%';
 
 UPDATE mascot_v2 SET url_share = REPLACE(url_share,
   'https://cdn.phoenix-stark.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE url_share LIKE 'https://cdn.phoenix-stark.com/mootech/%';
 
 UPDATE scared_thing SET url = REPLACE(url,
   'https://cdn.phoenix-stark.com/mootech/',
-  'https://jgxsjhbdhttfoiyvptvy.supabase.co/storage/v1/object/public/mootech/')
+  'https://soxsccdlsycaevusndro.supabase.co/storage/v1/object/public/mootech/')
   WHERE url LIKE 'https://cdn.phoenix-stark.com/mootech/%';
 
 -- ============ Verification (expect 0 rows remaining on the old bases) ============
