@@ -122,7 +122,13 @@ export class CronjobService {
 
     console.log('calendarInfo:', calendarInfo);
 
-    if (!calendarInfo) {
+    // chinese_calendar is currently parked (no row for many days) -> getCalendarDairy
+    // returns { result: null }. Reading calendarInfo.result.* used to throw
+    // "Cannot read properties of null". Skip gracefully until the calendar is populated.
+    if (!calendarInfo || !calendarInfo.result) {
+      this.logger.warn(
+        `No chinese_calendar row for ${day}/${month}/${year} — skipping morning notification.`,
+      );
       return;
     }
 
@@ -190,7 +196,11 @@ export class CronjobService {
 
     console.log('calendarInfo:', calendarInfo);
 
-    if (!calendarInfo) {
+    // Same parked-calendar guard as the 06:00 cron — avoid null result crash.
+    if (!calendarInfo || !calendarInfo.result) {
+      this.logger.warn(
+        `No chinese_calendar row for ${day}/${month}/${year} — skipping free morning notification.`,
+      );
       return;
     }
 
