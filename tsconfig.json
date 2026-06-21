@@ -12,7 +12,7 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "types": ["node", "express", "multer"],
+    "types": ["node", "express", "multer", "jest"],
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,

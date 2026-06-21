@@ -293,3 +293,15 @@ erDiagram
 - ถ้า `bazi` ต้องต่อกับระบบเดิม จุดที่น่าจะเกี่ยวตรงคือ user/auth, horoscope calculation surfaces, payment/membership, และ logging
 - การ integrate ควรเริ่มจาก controller routes ที่ public อยู่แล้วก่อน ไม่ควร assume ว่า analytic/power tables เป็น public contract โดยตรง
 - ถ้าจะ reverse-engineer business meaning ของแต่ละ table ต่อ ควรไล่จาก service owners ของ route ที่ frontend ใช้งานจริง เช่น `user`, `chinese-horoscope`, `fortune-telling`, `payment`, `member-payment-code`, `matching`
+---
+
+## 🔀 GitHub Flow & Guardrails
+
+> Canonical cross-repo contract: FE repo `MUMATE-GITHUB-FLOW.md`. This section = **BE specifics**.
+
+- **Branch model**: `feat/*` → PR → `main` (after migration from `feat/supabase-repoint`).
+- **Deploy = merge into `main`.** Render `autoDeploy: yes` (trigger `commit`), service `srv-d8nc4j8k1i2s73d7e030`. merge = ship. 🚫 No manual/CLI deploy.
+- **CI Hard Gate** (`.github/workflows/ci.yml`, on PR): `npm run build` (nest) + eslint **no-fix** + `npm test` (jest). Installs cairo/pango apt deps for `canvas`.
+- **Secret scan**: gitleaks on PR diff. Secrets only in Render dashboard (`sync: false`); `.env.example` is the masked contract.
+- **Ownership**: `@mojisejr` (CODEOWNERS). PR-only.
+- **Migration pending (operator)**: create `main` from `feat/supabase-repoint`, switch Render deploy branch → `main`.

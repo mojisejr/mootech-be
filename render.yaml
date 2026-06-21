@@ -10,7 +10,7 @@ services:
     name: mootech-be
     runtime: docker
     repo: https://github.com/mojisejr/mootech-be
-    branch: feat/supabase-repoint
+    branch: main
     region: singapore # closest to Supabase ap-southeast-1
     plan: starter # canvas/image-gen needs memory; bump if build OOMs
     dockerfilePath: ./Dockerfile
