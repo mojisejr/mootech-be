@@ -35,7 +35,7 @@ export class CompatibilityWorkService {
           where: {
             start_score: Raw(
               (alias) =>
-                `${score} BETWEEN ROUND(${alias}, 2) AND ROUND(end_score, 2)`,
+                `${score} BETWEEN ROUND(${alias}::numeric, 2) AND ROUND(end_score::numeric, 2)`,
             ),
           },
         },

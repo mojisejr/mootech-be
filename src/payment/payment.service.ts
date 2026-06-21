@@ -116,8 +116,8 @@ export class PaymentService {
 
     if (_input.word && _input.word != '') {
       query.andWhere(
-        `( user.name LIKE :word OR user.surname LIKE :word OR user.account_name LIKE :word ) OR
-        ( payment.email LIKE :word ) 
+        `( user.name ILIKE :word OR user.surname ILIKE :word OR user.account_name ILIKE :word ) OR
+        ( payment.email ILIKE :word )
         `,
         {
           word: `%${_input.word}%`,
