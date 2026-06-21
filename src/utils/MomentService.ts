@@ -19,6 +19,11 @@ export class MomentService {
     // Tolerate values stored as full timestamps ('YYYY-MM-DD HH:mm:ss') by parsing the
     // leading date only; strict mode would reject them and falsely report "expired".
     // #mootech-mysql-pg-migration-audit
-    return moment.tz(String(date).slice(0, 10), 'YYYY-MM-DD', true, 'Asia/Bangkok');
+    return moment.tz(
+      String(date).slice(0, 10),
+      'YYYY-MM-DD',
+      true,
+      'Asia/Bangkok',
+    );
   }
 }

@@ -137,13 +137,10 @@ export class UserProviderService {
       .createQueryBuilder('user_provider')
       .where('user_provider.provider = :provider', { provider: 'LINE' })
       // ✅ เงื่อนไขใหม่
-      .andWhere(
-        '(:today::date - user_provider.create_at::date) <= :day',
-        {
-          today,
-          day,
-        },
-      )
+      .andWhere('(:today::date - user_provider.create_at::date) <= :day', {
+        today,
+        day,
+      })
 
       .select(['user_provider']);
 

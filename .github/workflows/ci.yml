@@ -1,0 +1,36 @@
+name: ci
+# Hard Gate on every PR — runs BEFORE merge (merge into main = Render production deploy).
+# See FE repo MUMATE-GITHUB-FLOW.md §7.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  hard-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # `canvas` (^3.2.0) needs cairo/pango/etc to install — mirrors the Dockerfile.
+      - name: system deps for canvas
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config \
+            libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: lint (eslint, no-fix)
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+
+      - name: tests (jest)
+        run: npm test
+
+      - name: build (nest build)
+        run: npm run build
