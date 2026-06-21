@@ -22,9 +22,16 @@ async function bootstrap() {
     .map((o) => o.trim())
     .filter(Boolean);
   app.enableCors({ origin: corsOrigins, credentials: true });
-  app.use(json({ limit: '100mb' }));
 
-  app.use('/callback/omise', express.raw({ type: 'application/json' }));
+  // Omise webhook signature is HMAC-SHA256 over `<timestamp>.<raw body>`, so the
+  // webhook route MUST receive the unparsed bytes. Register express.raw for it
+  // FIRST, then JSON-parse every OTHER route. (#mootech-omise-payment-hardening)
+  const OMISE_WEBHOOK_PATH = '/omise/webhook';
+  app.use(OMISE_WEBHOOK_PATH, express.raw({ type: '*/*' }));
+  app.use((req, res, next) => {
+    if (req.path === OMISE_WEBHOOK_PATH) return next();
+    return json({ limit: '100mb' })(req, res, next);
+  });
   // Honor the port the platform injects (Render sets PORT). Fall back to
   // APP_PORT for existing setups, then 3000 for local dev. Bind 0.0.0.0 so
   // the container is reachable on Render.

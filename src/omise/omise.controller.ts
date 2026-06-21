@@ -1,15 +1,13 @@
-import { Body, Controller, HttpCode, Post, Req } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, Post, Req } from '@nestjs/common';
 import { OmiseService } from './omise.service';
+import {
+  OmiseChargeInput,
+  OmisePromptPayInput,
+} from './dto/omise-charge.input';
 
 @Controller('omise')
 export class OmiseController {
   constructor(private readonly omiseService: OmiseService) {}
-
-  @Post('card')
-  async payWithCard(@Body() body: any) {
-    const { amount, token } = body; // token ได้จาก frontend
-    return this.omiseService.createCardCharge(amount, token);
-  }
 
   @Post('retrieve')
   async retrieveCharge(@Body() body: any) {
@@ -18,10 +16,9 @@ export class OmiseController {
   }
 
   @Post('promptpay')
-  async payWithPromptPay(@Body() body: any) {
-    const { amount, email, user_id, payment_by, package_code } = body;
+  async payWithPromptPay(@Body() body: OmisePromptPayInput) {
+    const { email, user_id, payment_by, package_code } = body;
     return this.omiseService.createPromptPay(
-      amount,
       email,
       user_id,
       payment_by,
@@ -30,11 +27,10 @@ export class OmiseController {
   }
 
   @Post('charge')
-  async charge(@Body() body) {
-    const { token, amount, email, user_id, payment_by, package_code } = body;
+  async charge(@Body() body: OmiseChargeInput) {
+    const { token, email, user_id, payment_by, package_code } = body;
 
     const result = await this.omiseService.chargeCard(
-      amount,
       token,
       email,
       user_id,
@@ -48,9 +44,15 @@ export class OmiseController {
     };
   }
 
+  // Omise posts here. express.raw (see main.ts) makes req.body the raw Buffer so
+  // the HMAC signature can be verified over the exact bytes Omise signed.
   @Post('/webhook')
-  async handleWebhook(@Body() body: any) {
-    await this.omiseService.webHookOmise(body);
-    return { received: true };
+  @HttpCode(200)
+  async handleWebhook(
+    @Req() req: any,
+    @Headers('omise-signature') signature: string,
+    @Headers('omise-signature-timestamp') timestamp: string,
+  ) {
+    return this.omiseService.handleWebhook(req.body, signature, timestamp);
   }
 }

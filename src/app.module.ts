@@ -27,7 +27,6 @@ import { PowerCustomerModule } from './power-customer/power-customer.module';
 import { PowerFriendlyModule } from './power-friendly/power-friendly.module';
 import { PowerEducationModule } from './power-education/power-education.module';
 import { PowerFinanceModule } from './power-finance/power-finance.module';
-import { CallBackModule } from './callback/callback.module';
 import { SurveyModule } from './survey/survey.module';
 import { LogSurveyModule } from './log-survey/log-survey.module';
 import { ProductModule } from './product/product.module';
@@ -88,7 +87,6 @@ import { MemberPayAsUseModule } from './member-pay-as-use/member-pay-as-use.modu
       inject: [DbConfigService],
     }),
     ScheduleModule.forRoot(),
-    CallBackModule,
     AppConfigModule,
     ChineseHoroscopeModule,
     ChineseHoroscope8SquareModule,
