@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Raw, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CompatibilityLove } from './entity/compatibility-love-entity.model';
 import { CompatibilityLoveRating } from './entity/compatibility-love-rating-entity.model';
 import { CompatibilityLoveDescription } from './entity/compatibility-love-description-entity.model';
 import { CompatibilityLoveInput } from './dto/compatibility-love.input';
+import { findRatingBand } from '../utils/rating-band';
 
 @Injectable()
 export class CompatibilityLoveService {
@@ -31,16 +32,10 @@ export class CompatibilityLoveService {
       let score = result.score * 100;
 
       score = Math.round(score * 100) / 100;
-      const resultRating = await this.compatibilityLoveRatingRepository.findOne(
-        {
-          where: {
-            start_score: Raw(
-              (alias) =>
-                `${score} BETWEEN ROUND(${alias}::numeric, 2) AND ROUND(end_score::numeric, 2)`,
-            ),
-          },
-        },
-      );
+      // Match the score band in JS (dialect-proof). The rating table is tiny; this replaces a
+      // fragile TypeORM Raw() BETWEEN that broke on Postgres. #mootech-matching-calculate-robustness
+      const ratings = await this.compatibilityLoveRatingRepository.find();
+      const resultRating = findRatingBand(ratings, score);
 
       const codes = JSON.parse(result.details);
       const uniqueCodes = [...new Set(codes)];

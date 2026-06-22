@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Raw, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnalyticElementalCharacteristicsResult } from './entity/analytic-elemental-characteristics-result-entity.model';
 import { AnalyticElementalCharacteristicsCalculate } from './entity/analytic-elemental-characteristics-calculate-entity.model';
 import { AnalyticElementalCharacteristicsInput } from './dto/analytic-elemental-characteristics.input';
 import { AnalyticElementalCharacteristicsElementResult } from './entity/analytic-elemental-characteristics-result-element-entity.model';
 import { AnalyticElementalCharacteristicsGetElementsInput } from './dto/analytic-elemental-characteristics.input-get-elements';
+import { findRatingBand } from '../utils/rating-band';
 
 @Injectable()
 export class AnalyticElementalCharacteristicsService {
@@ -109,15 +110,14 @@ export class AnalyticElementalCharacteristicsService {
       }
     }
 
-    const resultAnalytic =
-      await this.analyticElementalCharacteristicsResultRepository.findOne({
-        where: {
-          start_score: Raw(
-            (alias) => `${score} BETWEEN ${alias} AND end_score`,
-          ),
-          day_above_element: _input.day_above_element,
-        },
+    // Match the score band in JS (dialect-proof) instead of a TypeORM Raw() BETWEEN that
+    // breaks on Postgres (same alias bug class as compatibility-*). Verbatim bounds (round:false)
+    // to preserve the original `score BETWEEN start_score AND end_score`. #mootech-matching-calculate-robustness
+    const rows =
+      await this.analyticElementalCharacteristicsResultRepository.find({
+        where: { day_above_element: _input.day_above_element },
       });
+    const resultAnalytic = findRatingBand(rows, score, { round: false });
 
     return resultAnalytic;
   }
