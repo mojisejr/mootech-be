@@ -35,11 +35,12 @@ graph LR
 ข้อตกลง **บังคับ** สำหรับการทำงานร่วมกันหลังระบบ live. AI ต้องปฏิบัติตามทุกข้อ ห้ามข้าม.
 
 ### Branch & Deploy
-- **Production branch = `feat/supabase-repoint`** (remote `mootech` → github.com/mojisejr/mootech-be) — Render `srv-d8nc4j8k1i2s73d7e030` autoDeploy on push.
-- **ห้าม push ตรงเข้า production branch เด็ดขาด.** ทุกการเปลี่ยนแปลง: `feature branch → PR → operator review → approve → merge`.
-- AI **ห้าม** merge PR ของตัวเอง และ **ห้าม** deploy เองโดยไม่ได้รับ approve.
-- Deploy ได้เมื่อ: Hard Gate (build/lint/test) เขียว **และ** PR merged **และ** operator OK เท่านั้น.
-- Follow-up: ตั้ง GitHub branch protection (require PR, block direct push); พิจารณา rename → `production`.
+> Canonical: FE repo [MUMATE-GITHUB-FLOW.md](../mootech-fe-fork/MUMATE-GITHUB-FLOW.md) §2–3 + **Branch Hygiene**. Summary here.
+- **Production branch = `main`** (remote `mootech` → github.com/mojisejr/mootech-be) — Render `srv-d8nc4j8k1i2s73d7e030` `autoDeploy: yes` watches `main` (migration done 2026-06-21). **Deploy = merge into `main`.** 🚫 ห้าม manual/CLI deploy.
+- Flow: `feat|fix|chore/*` (branch จาก `main` ล่าสุดเสมอ) → PR → operator review → **operator merge** = ship.
+- AI **ห้าม** merge PR ของตัวเอง และ **ห้าม** deploy เอง.
+- **Branch hygiene**: branch จาก `origin/main` ล่าสุดเสมอ (fetch ก่อน) · verify `MERGED` ก่อนลบ/ก่อนบอก "done" · หลัง merge กลับมา `main` + pull + ลบ branch ที่ merged แล้ว (`-d`) → พร้อมงานถัดไป.
+- Follow-up (operator): GitHub branch protection (require PR + CI). *(pending)*
 
 ### Database (ศักดิ์สิทธิ์ — แตะต้องคุยก่อน)
 - prod DB = Supabase **Pro `soxsccdlsycaevusndro`** (ap-southeast-1 pooler); dev = `jgxsjhbdhttfoiyvptvy`.
@@ -299,9 +300,9 @@ erDiagram
 
 > Canonical cross-repo contract: FE repo `MUMATE-GITHUB-FLOW.md`. This section = **BE specifics**.
 
-- **Branch model**: `feat/*` → PR → `main` (after migration from `feat/supabase-repoint`).
+- **Branch model**: `feat/*` → PR → `main`. Branch from `origin/main` ล่าสุดเสมอ; verify `MERGED` ก่อนลบ; กลับ `main` + pull หลัง merge (Branch Hygiene §2 ใน canonical).
 - **Deploy = merge into `main`.** Render `autoDeploy: yes` (trigger `commit`), service `srv-d8nc4j8k1i2s73d7e030`. merge = ship. 🚫 No manual/CLI deploy.
 - **CI Hard Gate** (`.github/workflows/ci.yml`, on PR): `npm run build` (nest) + eslint **no-fix** + `npm test` (jest). Installs cairo/pango apt deps for `canvas`.
 - **Secret scan**: gitleaks on PR diff. Secrets only in Render dashboard (`sync: false`); `.env.example` is the masked contract.
 - **Ownership**: `@mojisejr` (CODEOWNERS). PR-only.
-- **Migration pending (operator)**: create `main` from `feat/supabase-repoint`, switch Render deploy branch → `main`.
+- ✅ **Migration done (2026-06-21)**: `main` is the live deploy branch; Render watches `main`. (Was `feat/supabase-repoint`.)
