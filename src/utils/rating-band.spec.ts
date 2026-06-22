@@ -24,8 +24,12 @@ describe('findRatingBand', () => {
 
   it('rounds bounds to 2 decimals (parity with ROUND(...,2))', () => {
     // band end 66.666 rounds to 66.67, so 66.665 (-> caller passes 66.67) is covered
-    expect(findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.67)).not.toBeNull();
-    expect(findRatingBand([{ start_score: 0, end_score: 66.664 }], 66.67)).toBeNull();
+    expect(
+      findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.67),
+    ).not.toBeNull();
+    expect(
+      findRatingBand([{ start_score: 0, end_score: 66.664 }], 66.67),
+    ).toBeNull();
   });
 
   it('returns null when no band contains the score', () => {
@@ -46,8 +50,16 @@ describe('findRatingBand', () => {
 
   it('round:false compares bounds verbatim (no 2-decimal rounding)', () => {
     // exact mode: 66.666 is NOT rounded up to 66.67, so 66.67 is out of range
-    expect(findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.67, { round: false })).toBeNull();
+    expect(
+      findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.67, {
+        round: false,
+      }),
+    ).toBeNull();
     // and a score inside the verbatim range still matches
-    expect(findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.5, { round: false })).not.toBeNull();
+    expect(
+      findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.5, {
+        round: false,
+      }),
+    ).not.toBeNull();
   });
 });
