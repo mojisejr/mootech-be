@@ -20,16 +20,22 @@ export interface ScoreBand {
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
-// Return the first band whose [round2(start_score), round2(end_score)] inclusive range
-// contains `score`, or null when none match. `score` is expected pre-rounded to 2 decimals
-// by the caller (parity with the previous query).
+// Return the first band whose inclusive [start_score, end_score] range contains `score`,
+// or null when none match.
+//
+// `opts.round` (default true) rounds the bounds to 2 decimals — parity with the
+// compatibility queries that used `ROUND(start_score::numeric, 2)`. Pass `{ round: false }`
+// for callers whose original SQL compared bounds verbatim (e.g. analytic elemental
+// characteristics: `score BETWEEN start_score AND end_score`).
 export function findRatingBand<T extends ScoreBand>(
   rows: T[],
   score: number,
+  opts: { round?: boolean } = {},
 ): T | null {
+  const bound = (n: number): number => (opts.round === false ? n : round2(n));
   return (
     rows.find(
-      (r) => round2(r.start_score) <= score && score <= round2(r.end_score),
+      (r) => bound(r.start_score) <= score && score <= bound(r.end_score),
     ) ?? null
   );
 }

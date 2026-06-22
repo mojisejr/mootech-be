@@ -43,4 +43,11 @@ describe('findRatingBand', () => {
   it('matches the top band at score 100', () => {
     expect(findRatingBand(bands, 100)?.id).toBe(3);
   });
+
+  it('round:false compares bounds verbatim (no 2-decimal rounding)', () => {
+    // exact mode: 66.666 is NOT rounded up to 66.67, so 66.67 is out of range
+    expect(findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.67, { round: false })).toBeNull();
+    // and a score inside the verbatim range still matches
+    expect(findRatingBand([{ start_score: 0, end_score: 66.666 }], 66.5, { round: false })).not.toBeNull();
+  });
 });
