@@ -329,6 +329,7 @@ export class UserService {
           } catch (e) {}
         }
 
+        const referCode = await this.ensureReferCode(user);
         if (!user.name || user.name == '') {
           console.log('HAVE - user GO TO FORM:');
           // GO TO FORM
@@ -338,7 +339,7 @@ export class UserService {
             is_info: false,
             user_id: user.user_id,
             name: user.name,
-            ref_code: user.refer_code,
+            ref_code: referCode,
             picture_url: user.picture_url,
             is_refresh: user.is_refresh,
             result_code: user.result_code,
@@ -352,7 +353,7 @@ export class UserService {
             is_info: true,
             user_id: user.user_id,
             name: user.name,
-            ref_code: user.refer_code,
+            ref_code: referCode,
             picture_url: user.picture_url,
             is_refresh: user.is_refresh,
             result_code: user.result_code,
@@ -431,6 +432,7 @@ export class UserService {
             } catch (e) {}
           }
 
+          const referCode = await this.ensureReferCode(user);
           if (!user.name || user.name == '') {
             // GO TO FORM
             return {
@@ -439,7 +441,7 @@ export class UserService {
               is_info: false,
               user_id: user.user_id,
               name: user.name,
-              ref_code: user.refer_code,
+              ref_code: referCode,
               picture_url: user.picture_url,
               is_refresh: user.is_refresh,
               result_code: user.result_code,
@@ -457,7 +459,7 @@ export class UserService {
               is_info: true,
               user_id: user.user_id,
               name: user.name,
-              ref_code: user.refer_code,
+              ref_code: referCode,
               picture_url: user.picture_url,
               is_refresh: user.is_refresh,
               result_code: user.result_code,
@@ -798,6 +800,17 @@ export class UserService {
   async getUser(_input: UserGetInput): Promise<any> {
     const result = await this.userRepository.find();
     return result;
+  }
+
+  // Guarantees the user has a non-empty refer_code. Backfills + persists one
+  // for legacy users created before refer_code was reliably generated, so
+  // register-login can always return a usable ref_code (login-loop fix).
+  private async ensureReferCode(user: User): Promise<string> {
+    if (!user.refer_code || user.refer_code === '') {
+      user.refer_code = this.generateRandomAlphabet(20);
+      await this.userRepository.save(user);
+    }
+    return user.refer_code;
   }
 
   private generateRandomAlphabet(length = 4) {
