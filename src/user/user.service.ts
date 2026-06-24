@@ -360,23 +360,27 @@ export class UserService {
           };
         }
       } else {
-        // FORM
-        console.log('HAVE - user - NO HAVE:');
-        // if (refCode && refCode != '') {
-        //   try {
-        //     await this.addFriend(user.user_id, _input.refer_code, user);
-        //   } catch (e) {}
-        // }
+        // ORPHAN provider: the user_provider row exists (matched by id_token), but
+        // its user row was deleted -> `user` is null here. The previous code did
+        // `user.user_id` and threw `Cannot read properties of null` (HTTP 500),
+        // which broke Google login for any account whose user was removed without
+        // also removing its user_provider rows. LINE escaped because it creates a
+        // fresh user. Mirror the email-path orphan handling (the `usersEmails`
+        // branch below) and return null fields instead of crashing.
+        // NOTE: this only PREVENTS the crash. The orphan provider should still be
+        // cleaned (delete user_provider when a user is deleted) — see the dangling
+        // provider cleanup script / cascade follow-up. (#be-registerlogin-orphan-guard)
+        console.log('ORPHAN provider (user deleted) -> null-safe return');
         return {
           is_user_new: true,
           is_email: true,
           is_info: false,
-          user_id: user.user_id,
-          name: user.name,
-          ref_code: user.refer_code,
-          picture_url: user.picture_url,
-          is_refresh: user.is_refresh,
-          result_code: user.result_code,
+          user_id: null,
+          name: null,
+          ref_code: null,
+          picture_url: null,
+          is_refresh: null,
+          result_code: null,
         };
       }
     } else {
