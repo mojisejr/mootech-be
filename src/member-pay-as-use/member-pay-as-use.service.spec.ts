@@ -81,6 +81,25 @@ describe('MemberPayAsUseService — wallet (#mootech-chat-credit-wallet)', () =>
       const res = await svc.consume('u1');
       expect(res).toEqual({ ok: false, balance: 0 });
     });
+
+    // Real TypeORM/pg shape for UPDATE … RETURNING is [returningRows, affectedCount].
+    it('parses the [rows, affectedCount] driver shape', async () => {
+      const { svc } = makeService({
+        memberRepo: {
+          query: jest.fn().mockResolvedValue([[{ balance: 1 }], 1]),
+        },
+      });
+      const res = await svc.consume('u1');
+      expect(res).toEqual({ ok: true, balance: 1 });
+    });
+
+    it('parses empty [rows, 0] (nothing decremented) as ok:false', async () => {
+      const { svc } = makeService({
+        memberRepo: { query: jest.fn().mockResolvedValue([[], 0]) },
+      });
+      const res = await svc.consume('u1');
+      expect(res).toEqual({ ok: false, balance: 0 });
+    });
   });
 
   describe('upsertBalance (welcome / backfill seed)', () => {

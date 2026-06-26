@@ -69,13 +69,16 @@ export class MemberPayAsUseService {
    */
   async consume(userId: string): Promise<{ ok: boolean; balance: number }> {
     const updateAt = this.momentWrapper.moment().format('YYYY-MM-DD HH:mm:ss');
-    const rows = await this.memberPayAsUseRepository.query(
+    const result = await this.memberPayAsUseRepository.query(
       `UPDATE member_pay_as_use
          SET balance = balance - 1, update_at = $2
        WHERE user_id = $1 AND balance > 0
        RETURNING balance`,
       [userId, updateAt],
     );
+    // TypeORM/pg returns [returningRows, affectedCount] for UPDATE … RETURNING,
+    // but a plain rows array for some drivers — normalize to the returning rows.
+    const rows = Array.isArray(result?.[0]) ? result[0] : result;
     if (!rows || rows.length === 0) {
       return { ok: false, balance: 0 };
     }
