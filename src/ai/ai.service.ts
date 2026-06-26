@@ -21,6 +21,10 @@ import {
 } from 'src/constants/ai-code-response';
 import { FEATURE_TYPE } from 'src/constants/feature-type';
 import { MemberPayAsUseService } from 'src/member-pay-as-use/member-pay-as-use.service';
+import {
+  computeMigratedBalance,
+  isCreditEnforced,
+} from 'src/member-pay-as-use/wallet.util';
 
 @Injectable()
 export class AiService {
@@ -122,6 +126,116 @@ export class AiService {
       message: codeDesc,
       is_free: isFree,
     };
+  }
+
+  /**
+   * Wallet balance for the AI_GENERAL pool (shared by old Mate chat + new bazi chat).
+   * - Active MEMBER (Soulmate/VIP, not expired) → unlimited, wallet untouched.
+   * - Existing wallet row → its stored balance.
+   * - No row yet → footprint-aware seed via Option B: used=0 grants WELCOME 3,
+   *   legacy overflow (usage but no row, pre-migration) backfills max(0, 3 − used).
+   *   The seed row is created idempotently so welcome is granted at most once.
+   */
+  async getBalanceInfo(user_id: string): Promise<{
+    isMember: boolean;
+    unlimited: boolean;
+    balance: number;
+  }> {
+    const userInfo = await this.memberPaymentService.getMemberPayment({
+      user_id: user_id,
+    } as MemberPaymentGetInput);
+    const isMember =
+      !!userInfo &&
+      userInfo.plan_code == PaymentPlan.MEMBER &&
+      this.isNotExpired(userInfo.expire_at);
+    if (isMember) {
+      return { isMember: true, unlimited: true, balance: 0 };
+    }
+
+    const wallet = await this.memberPayAsUseService.getMemberPayAsUse(user_id);
+    if (wallet) {
+      return {
+        isMember: false,
+        unlimited: false,
+        balance: wallet.balance ?? 0,
+      };
+    }
+
+    // No wallet row: seed from lifetime AI_GENERAL usage (Option B formula).
+    const used = await this.logAIRepository.count({
+      where: { user_id: user_id, ai_type: FEATURE_TYPE.AI_GENERAL },
+    });
+    const balance = computeMigratedBalance(0, used);
+    await this.memberPayAsUseService.upsertBalance(user_id, balance);
+    return { isMember: false, unlimited: false, balance };
+  }
+
+  /**
+   * Wallet gate for the AI_GENERAL pool. Members are unlimited. When enforcement
+   * is on, a non-member with no remaining balance is blocked (OUT_OF_LIMIT). When
+   * `CREDIT_ENFORCE=off`, balance is tracked but never blocks (counter-only mode).
+   */
+  async checkWalletGate(user_id: string): Promise<{
+    allowed: boolean;
+    unlimited: boolean;
+    balance: number;
+    code: number;
+    message: string;
+  }> {
+    const info = await this.getBalanceInfo(user_id);
+    if (info.unlimited) {
+      return {
+        allowed: true,
+        unlimited: true,
+        balance: 0,
+        code: AI_CODE_RESPONSE.SUCCESS,
+        message: AI_CODE_RESPONSE_MESSAGE.SUCCESS,
+      };
+    }
+    if (!isCreditEnforced() || info.balance > 0) {
+      return {
+        allowed: true,
+        unlimited: false,
+        balance: info.balance,
+        code: AI_CODE_RESPONSE.SUCCESS,
+        message: AI_CODE_RESPONSE_MESSAGE.SUCCESS,
+      };
+    }
+    return {
+      allowed: false,
+      unlimited: false,
+      balance: 0,
+      code: AI_CODE_RESPONSE.OUT_OF_LIMIT,
+      message: AI_CODE_RESPONSE_MESSAGE.OUT_OF_LIMIT,
+    };
+  }
+
+  /** Reject calls to the consume endpoint that don't carry the BFF↔BE shared secret. */
+  private assertConsumeSecret(secret: string): void {
+    const expected = process.env.AI_CONSUME_SECRET;
+    if (!expected || secret !== expected) {
+      throw new HttpException(
+        { code: 401, message: 'Unauthorized', error: 'Error' },
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
+
+  /**
+   * Spend exactly one AI_GENERAL credit (called by the FE BFF after a successful
+   * answer). Secret-guarded. Members are unlimited and are never charged.
+   */
+  async consumeCredit(
+    user_id: string,
+    secret: string,
+  ): Promise<{ ok: boolean; unlimited: boolean; balance: number }> {
+    this.assertConsumeSecret(secret);
+    const info = await this.getBalanceInfo(user_id);
+    if (info.unlimited) {
+      return { ok: true, unlimited: true, balance: 0 };
+    }
+    const res = await this.memberPayAsUseService.consume(user_id);
+    return { ok: res.ok, unlimited: false, balance: res.balance };
   }
 
   async chatAIFortuneStick(_input: AiChatFortuneStickInput): Promise<any> {
@@ -417,18 +531,15 @@ export class AiService {
   // CHAT AI GENERAL
   async chatAI(_input: AiChatInput, is_streaming: boolean): Promise<any> {
     let isRunAi = false;
-    const responseCheck: any = await this.isCheckUsage(
-      _input.user_id,
-      AI_CHAT_LIMIT.FREE_GENERAL,
-      AI_CHAT_LIMIT.MEMBER_GENERAL,
-      FEATURE_TYPE.AI_GENERAL,
-    );
-    if (responseCheck && responseCheck.code != AI_CODE_RESPONSE.SUCCESS) {
+    // AI_GENERAL now gates on the wallet (balance>0 or member-unlimited),
+    // honoring CREDIT_ENFORCE. Old yearly-window check is retired for this pool.
+    const gate = await this.checkWalletGate(_input.user_id);
+    if (!gate.allowed) {
       isRunAi = false;
       throw new HttpException(
         {
-          code: responseCheck.code,
-          message: responseCheck.message,
+          code: gate.code,
+          message: gate.message,
           error: 'Error',
         },
         HttpStatus.GONE,
@@ -555,6 +666,10 @@ export class AiService {
             _input.message,
             FEATURE_TYPE.AI_GENERAL,
           );
+          // Deduct one credit on a successful answer (members are unlimited).
+          if (!gate.unlimited) {
+            await this.memberPayAsUseService.consume(_input.user_id);
+          }
           return {
             code: 200,
             message: result.answer,
@@ -584,18 +699,15 @@ export class AiService {
 
   async chatAIStreaming(_input: AiChatInput, res: Response): Promise<any> {
     let isRunAi = false;
-    const responseCheck: any = await this.isCheckUsage(
-      _input.user_id,
-      AI_CHAT_LIMIT.FREE_GENERAL,
-      AI_CHAT_LIMIT.MEMBER_GENERAL,
-      FEATURE_TYPE.AI_GENERAL,
-    );
-    if (responseCheck && responseCheck.code != AI_CODE_RESPONSE.SUCCESS) {
+    // AI_GENERAL now gates on the wallet (balance>0 or member-unlimited),
+    // honoring CREDIT_ENFORCE. Old yearly-window check is retired for this pool.
+    const gate = await this.checkWalletGate(_input.user_id);
+    if (!gate.allowed) {
       isRunAi = false;
       throw new HttpException(
         {
-          code: responseCheck.code,
-          message: responseCheck.message,
+          code: gate.code,
+          message: gate.message,
           error: 'Error',
         },
         HttpStatus.GONE,
@@ -720,6 +832,10 @@ export class AiService {
           _input.message,
           FEATURE_TYPE.AI_GENERAL,
         );
+        // Deduct one credit on a successful answer (members are unlimited).
+        if (!gate.unlimited) {
+          await this.memberPayAsUseService.consume(_input.user_id);
+        }
         return result;
       } catch (e) {
         throw new HttpException(
