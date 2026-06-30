@@ -39,3 +39,7 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+
+# prod monitor — local runtime state (never commit)
+scripts/monitor/.state.json
+scripts/monitor/.env.monitor.local
