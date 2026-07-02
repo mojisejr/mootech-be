@@ -35,6 +35,19 @@ import { CompatibilityLoveAnalyticInput } from './dto/compatibility-love-analyti
 import { CompatibilityLoveService } from 'src/compatibility-love/compatibility-love.service';
 import { CompatibilityWorkService } from 'src/compatibility-work/compatibility-work.service';
 import { CompatibilityLoveInput } from 'src/compatibility-love/dto/compatibility-love.input';
+// #mootech-matching-bazi-swap: bazi pair engine (env-gated, reversible) + pure mapper.
+import {
+  fetchBaziPair,
+  isBaziMatchingEnabled,
+} from 'src/matching/bazi/bazi-pair.adapter';
+import {
+  mapBaziPairToComputeResult,
+  toBaziPairRequest,
+} from 'src/matching/bazi/bazi-pair.mapper';
+import {
+  MatchingComputeResult,
+  MatchingType,
+} from 'src/matching/bazi/bazi-pair.types';
 import { PowerKnowledgeService } from 'src/power-knowledge/power-knowledge.service';
 import { PowerKnowledgeInput } from 'src/power-knowledge/dto/power-knowledge.input';
 import { PowerFriendlyService } from 'src/power-friendly/power-friendly.service';
@@ -1050,6 +1063,37 @@ export class ChineseHoroscopeService {
     }
   }
 
+  // #mootech-matching-bazi-swap: compute compatibility via the bazi pair engine.
+  // Returns null (so the caller falls back to the legacy table compute) when the
+  // engine is disabled, the input is not usable (e.g. missing birth time), or the
+  // bazi call fails/times out. Read-only against bazi; no engine mutation.
+  async computeBaziPair(
+    _input: CompatibilityLoveAnalyticInput,
+    type: MatchingType,
+  ): Promise<MatchingComputeResult | null> {
+    if (!isBaziMatchingEnabled()) {
+      return null;
+    }
+    const req = toBaziPairRequest(_input.me, _input.you, type);
+    if (!req) {
+      return null;
+    }
+    try {
+      const resp = await fetchBaziPair(req);
+      const mapped = mapBaziPairToComputeResult(resp, type);
+      if (!mapped.result || mapped.result.score == null) {
+        return null;
+      }
+      return mapped;
+    } catch (e) {
+      console.error(
+        '[matching][bazi] pair failed, falling back to legacy:',
+        e?.message ?? e,
+      );
+      return null;
+    }
+  }
+
   // สมพงษ์ รัก
   async compatibilityLove(
     _input: CompatibilityLoveAnalyticInput,
@@ -1059,6 +1103,25 @@ export class ChineseHoroscopeService {
     // if (checkResult.status == 400) {
     //   return { status: 400 }
     // }
+
+    // bazi engine first (env-gated, reversible); preserve the same side effects.
+    const baziLove = await this.computeBaziPair(_input, 'LOVE');
+    if (baziLove) {
+      await this.logWoLoveMateService.insertLogLoveMate({
+        user_id: _input.user_id,
+        name: _input.me.name,
+        dob: _input.me.dob,
+        time: _input.me.time,
+        gender: _input.me.gender,
+        your_name: _input.you.name,
+        your_dob: _input.you.dob,
+        your_time: _input.you.time,
+        your_gender: _input.you.gender,
+        result: baziLove.result,
+      } as LogLoveMateInsertInput);
+      await this.userService.updateLoveMate(_input.user_id);
+      return baziLove;
+    }
 
     const meResult = await this.chineseHoroscope4Rows(_input.me, false);
     const youResult = await this.chineseHoroscope4Rows(_input.you, false);
@@ -1114,6 +1177,29 @@ export class ChineseHoroscopeService {
     // if (checkResult.status == 400) {
     //   return { status: 400 }
     // }
+
+    // bazi engine first (env-gated, reversible); preserve the same side effects.
+    const baziWork = await this.computeBaziPair(
+      _input,
+      (_input.type as MatchingType) ?? 'FRIEND',
+    );
+    if (baziWork) {
+      await this.logWorkVibeService.insertLogWorkVibe({
+        user_id: _input.user_id,
+        type: _input.type,
+        name: _input.me.name,
+        dob: _input.me.dob,
+        time: _input.me.time,
+        gender: _input.me.gender,
+        your_name: _input.you.name,
+        your_dob: _input.you.dob,
+        your_time: _input.you.time,
+        your_gender: _input.you.gender,
+        result: baziWork.result,
+      } as LogWorkVibeInsertInput);
+      await this.userService.updateWorkVibes(_input.user_id);
+      return baziWork;
+    }
 
     const meResult = await this.chineseHoroscope4Rows(_input.me, false);
     const youResult = await this.chineseHoroscope4Rows(_input.you, false);
