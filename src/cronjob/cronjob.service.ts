@@ -8,6 +8,7 @@ import { MemberPaymentGetAvailableInput } from 'src/member-payment/dto/member-pa
 import { MemberPaymentService } from 'src/member-payment/member-payment.service';
 import { MomentService } from 'src/utils/MomentService';
 import { LessThan } from 'typeorm';
+import { dedupeLineUserIds, isMorningCronEnabled } from './cronjob.util';
 
 @Injectable()
 export class CronjobService {
@@ -107,7 +108,14 @@ export class CronjobService {
   // @Cron('0 0 8 * * *', { timeZone: 'Asia/Bangkok' })
   @Cron('0 0 6 * * *', { timeZone: 'Asia/Bangkok' })
   async sendMorningNotification() {
-    this.logger.log('Running 08:00 LINE notification cron...');
+    // Reversible master switch (default OFF). Re-enable via MORNING_CRON_ENABLED=true.
+    if (!isMorningCronEnabled()) {
+      this.logger.log(
+        'Morning notification disabled (MORNING_CRON_ENABLED != true) — skipping.',
+      );
+      return;
+    }
+    this.logger.log('Running 06:00 LINE notification cron (member)...');
 
     const day = parseInt(this.momentWrapper.moment().format('DD'));
     const month = parseInt(this.momentWrapper.moment().format('MM'));
@@ -153,15 +161,9 @@ export class CronjobService {
     );
     // console.log('userLists:', userLists);
 
-    const userIds: any[] = [];
-    for (let i = 0; i < userLists.length; i++) {
-      const user = userLists[i];
-      userIds.push(user.user_provider_id_token);
-    }
-
-    // console.log(userIds);
-
-    // const userIds = ['U31a1a0aeafc7d4f654205ee8fb265053'];
+    const rawUserIds = userLists.map((user) => user.user_provider_id_token);
+    // Dedup + validate: a member with duplicate payment rows must not be sent twice.
+    const userIds = dedupeLineUserIds(rawUserIds);
 
     if (!userIds.length) {
       this.logger.log('No users to send');
@@ -181,7 +183,14 @@ export class CronjobService {
   // 9 8
   @Cron('0 0 9 * * *', { timeZone: 'Asia/Bangkok' })
   async sendMorningNotificationFree() {
-    this.logger.log('Running 08:00 LINE notification cron...');
+    // Reversible master switch (default OFF). Re-enable via MORNING_CRON_ENABLED=true.
+    if (!isMorningCronEnabled()) {
+      this.logger.log(
+        'Free morning notification disabled (MORNING_CRON_ENABLED != true) — skipping.',
+      );
+      return;
+    }
+    this.logger.log('Running 09:00 LINE notification cron (free)...');
 
     const day = parseInt(this.momentWrapper.moment().format('DD'));
     const month = parseInt(this.momentWrapper.moment().format('MM'));
@@ -231,46 +240,21 @@ export class CronjobService {
     const userLists = await this.memberPaymentService.getMemberPaymentFree(3);
     // console.log('userLists:', userLists);
 
-    const userIds: any[] = [];
-    for (let i = 0; i < userLists.length; i++) {
-      const user = userLists[i];
-      userIds.push(user.user_provider_id_token);
-    }
+    const rawUserIds = userLists.map((user) => user.user_provider_id_token);
 
     const userMembers =
       await this.memberPaymentService.getMemberPaymentAvailable({
         plan_code: PaymentPlan.MEMBER,
       } as MemberPaymentGetAvailableInput);
-    // console.log('userMembers:', userMembers);
 
-    const userListsMember: any[] = [];
-    for (let i = 0; i < userMembers.length; i++) {
-      const user = userMembers[i];
-      userListsMember.push(user.user_provider_id_token);
-    } // ✅ ตรวจสอบ LINE userId (ขึ้นต้นด้วย U + 32 hex)
-    const isLineUserId = (value: unknown): value is string => {
-      return typeof value === 'string' && /^U[a-f0-9]{32}$/i.test(value.trim());
-    };
+    const memberIds = userMembers.map((user) => user.user_provider_id_token);
 
-    // 1️⃣ รวมก่อน
-    // 1️⃣ Normalize userListsMember ก่อน (trim + filter)
-    const memberSet = new Set(
-      userListsMember
-        .map((id) => (typeof id === 'string' ? id.trim() : ''))
-        .filter(isLineUserId),
-    );
+    // Free recipients = valid unique LINE ids, minus anyone who is already a member.
+    const memberSet = new Set(dedupeLineUserIds(memberIds));
+    const mergedUnique = dedupeLineUserIds(rawUserIds, memberSet);
 
-    // 2️⃣ Clean userIds + filter + remove คนที่อยู่ใน memberSet
-    const mergedUnique = Array.from(
-      new Set(
-        userIds
-          .map((id) => (typeof id === 'string' ? id.trim() : ''))
-          .filter((id) => isLineUserId(id) && !memberSet.has(id)),
-      ),
-    );
-
-    console.log('userIds', userIds.length);
-    console.log('userListsMember', userListsMember.length);
+    console.log('userIds', rawUserIds.length);
+    console.log('userListsMember', memberIds.length);
     console.log('mergedUnique', mergedUnique.length);
 
     if (!mergedUnique.length) {
