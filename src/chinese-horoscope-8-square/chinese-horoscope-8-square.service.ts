@@ -10,6 +10,7 @@ import { ChineseHoroscope8SquareCheckMonthChineseInput } from './dto/chinese-hor
 import { ChineseHoroscope8SquareCheckMonthHongHouTungInput } from './dto/chinese-horoscope-8-square-check-month-hong-hou-tung.input';
 import { ChineseHoroscope8SquareGet9FebInput } from './dto/chinese-horoscope-8-square-get-9-feb.input';
 import { MomentService } from 'src/utils/MomentService';
+import { calculateChineseAge } from 'src/utils/calculate-year';
 import { ChineseHoroscope8SquareTimeHongHouTung } from './entity/chinese-horoscope-8-square-time-hong-hou-tung-entity.model';
 import { ChineseHoroscopeDetailResponse } from 'src/chinese-horoscope/model/chinese-horoscope-detail-response.model';
 import { ChineseHoroscope8SquareAscendant } from './entity/chinese-horoscope-8-square-ascendant-entity.model';
@@ -481,6 +482,7 @@ export class ChineseHoroscope8SquareService {
     month: number,
     date: number,
     time: string,
+    realYear: number,
   ): Promise<any> {
     console.log('getChineseHoroscope8Cycle:');
     // STEP 1:
@@ -525,7 +527,14 @@ export class ChineseHoroscope8SquareService {
     console.log('yearBirth: ' + yearBirth + ' : monthBirth: ' + monthBirth);
 
     // LOOP : MONTH
-    const age = parseInt(this.momentService.moment().format('YYYY')) - year + 1;
+    // #chinese-age-offset-fix: age must come from the real Gregorian birth
+    // year (realYear), not `year` — which is already lunar-shifted -1 for
+    // Jan 1 - Feb 3 births (correct for the zodiac/pillar lookups above,
+    // wrong for plain calendar-year age arithmetic).
+    const age = calculateChineseAge(
+      realYear,
+      this.momentService.moment().toDate(),
+    );
     let startMonthAboveId = monthAbove.id;
     let startMonthBelowId = monthBelow.id;
     const initStartAgeYear = yearBirth;

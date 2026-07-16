@@ -18,3 +18,14 @@ export function CalculateDateEngToDAteChinese(dateEng: string): string {
   }
   return dateEng;
 }
+
+// #chinese-age-offset-fix: Chinese age must be derived from the REAL Gregorian
+// birth year, never the lunar-shifted year CalculateDateEngToDAteChinese
+// produces for Jan 1 - Feb 3 births (that shift is only correct for zodiac/
+// pillar lookups). Convention: อายุจีน = อายุไทย(western) + 1.
+export function calculateChineseAge(
+  realBirthYear: number,
+  now: Date = new Date(),
+): number {
+  return now.getFullYear() - realBirthYear + 1;
+}
