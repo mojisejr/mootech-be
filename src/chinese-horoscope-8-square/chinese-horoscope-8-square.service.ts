@@ -478,7 +478,6 @@ export class ChineseHoroscope8SquareService {
     monthAbove: any,
     monthBelow: any,
     gender: string,
-    year: number,
     month: number,
     date: number,
     time: string,
@@ -494,14 +493,20 @@ export class ChineseHoroscope8SquareService {
     console.log('isUseBigNextMonth:' + isUseBigNextDate);
 
     // STEP 3: BIRTHDAY
-    const birthDate = `${year}-${month < 10 ? `0${month}` : month}-${
+    // #decade-onset-year-shift-fix: onset (起运) distance-to-节 must be measured from the REAL
+    // Gregorian birth year (realYear), not `year` — which is lunar-shifted -1 for Jan 1 - Feb 3
+    // births (correct for the zodiac/pillar lookups elsewhere, wrong here: it makes STEP 4 look
+    // up the wrong calendar year's almanac boundary, e.g. 1988's 小寒 instead of 1989's, for a
+    // 1989-01-03 birth — the two boundaries happen to fall on a similar month/day every year, so
+    // this can silently tip `floor(diffDate/3)` by ±1, shifting every subsequent 5-year band).
+    const birthDate = `${realYear}-${month < 10 ? `0${month}` : month}-${
       date < 10 ? `0${date}` : date
     }`;
     console.log('birthDate:' + birthDate);
 
     // STEP 4 : FIND BIG OR SMALL
     const bigOrSmallDate = await this.calendar100YearService.getDay(
-      year,
+      realYear,
       month,
       date,
       time,
@@ -513,7 +518,7 @@ export class ChineseHoroscope8SquareService {
     // STEP 5 : DIFF DATE
     const diffDate = this.diffDays(
       {
-        year: year,
+        year: realYear,
         month: month,
         date: date,
       },
