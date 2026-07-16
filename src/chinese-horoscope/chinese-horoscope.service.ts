@@ -437,6 +437,7 @@ export class ChineseHoroscopeService {
           month,
           date,
           time,
+          parseInt(yearReal),
         );
 
       // ปีจร
