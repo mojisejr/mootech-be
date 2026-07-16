@@ -17,25 +17,32 @@ import { ChineseHoroscope8SquareService } from './chinese-horoscope-8-square.ser
 //     days → floor(3/3) = 1 → every band shifted +1 year (the exact symptom ฟีม reported).
 function makeService(overrides: any = {}) {
   const aboveRepo = {
-    findOne: jest.fn().mockResolvedValue({ id: 1, chinese_symbol: 'above-X', element: 'WOOD' }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ id: 1, chinese_symbol: 'above-X', element: 'WOOD' }),
   };
   const belowRepo = {
-    findOne: jest.fn().mockResolvedValue({ id: 1, chinese_symbol: 'below-Y', element: 'WOOD' }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ id: 1, chinese_symbol: 'below-Y', element: 'WOOD' }),
   };
   const calendar100YearService = {
     // Responds differently depending on the `year` it's actually called with — this is what
     // makes the regression trap real: if a future change reintroduces the shifted year, this
     // mock returns the WRONG (1988) boundary and the final ageStart assertion below fails.
     getDay: jest.fn(async (year: number) => {
-      if (year === 1989) return { year: 1989, month: 1, date: 5, time: '16:45' };
-      if (year === 1988) return { year: 1988, month: 1, date: 6, time: '11:03' };
+      if (year === 1989)
+        return { year: 1989, month: 1, date: 5, time: '16:45' };
+      if (year === 1988)
+        return { year: 1988, month: 1, date: 6, time: '11:03' };
       return { year, month: 1, date: 1, time: '00:00' };
     }),
     ...(overrides.calendar100YearService || {}),
   };
   const momentService = {
     moment: () => moment.tz('2026-07-16', 'Asia/Bangkok'),
-    momentDateFromFormat: (dateStr: string, fmt: string) => moment.tz(dateStr, fmt, 'Asia/Bangkok'),
+    momentDateFromFormat: (dateStr: string, fmt: string) =>
+      moment.tz(dateStr, fmt, 'Asia/Bangkok'),
   };
   const svc = new ChineseHoroscope8SquareService(
     aboveRepo as any,
@@ -67,7 +74,13 @@ describe('ChineseHoroscope8SquareService.getChineseHoroscope8Cycle — decade on
       '05:12',
       1989, // realYear
     );
-    expect(calendar100YearService.getDay).toHaveBeenCalledWith(1989, 1, 3, '05:12', true);
+    expect(calendar100YearService.getDay).toHaveBeenCalledWith(
+      1989,
+      1,
+      3,
+      '05:12',
+      true,
+    );
   }, 30000);
 
   it('ฟีมเคส (dob 1989-01-03, MALE): first decade band starts at age 0 (real onset), not age 1 (the old shifted-year bug)', async () => {
@@ -83,7 +96,9 @@ describe('ChineseHoroscope8SquareService.getChineseHoroscope8Cycle — decade on
       1989,
     );
     expect(result.birthdayYear).toBe(0);
-    const sorted = [...result.life].sort((a: any, b: any) => a.ageStart - b.ageStart);
+    const sorted = [...result.life].sort(
+      (a: any, b: any) => a.ageStart - b.ageStart,
+    );
     expect(sorted[0].ageStart).toBe(0);
     expect(sorted[0].ageEnd).toBe(4);
     expect(sorted[1].ageStart).toBe(5);
@@ -95,8 +110,20 @@ describe('ChineseHoroscope8SquareService.getChineseHoroscope8Cycle — decade on
     // asked with the shifted year? (1988 boundary is a real day later relative to birth than the
     // 1989 boundary is, in this mock's fixture — confirms the two are genuinely different inputs,
     // not merely relabeled.)
-    const buggyBoundary = await calendar100YearService.getDay(1988, 1, 3, '05:12', true);
-    const fixedBoundary = await calendar100YearService.getDay(1989, 1, 3, '05:12', true);
+    const buggyBoundary = await calendar100YearService.getDay(
+      1988,
+      1,
+      3,
+      '05:12',
+      true,
+    );
+    const fixedBoundary = await calendar100YearService.getDay(
+      1989,
+      1,
+      3,
+      '05:12',
+      true,
+    );
     expect(buggyBoundary).not.toEqual(fixedBoundary);
 
     const result = await svc.getChineseHoroscope8Cycle(
@@ -116,7 +143,9 @@ describe('ChineseHoroscope8SquareService.getChineseHoroscope8Cycle — decade on
   it('non-boundary-window control (June birth): realYear is the only year that ever existed for this call — sanity, no crash', async () => {
     const { svc, calendar100YearService } = makeService({
       calendar100YearService: {
-        getDay: jest.fn().mockResolvedValue({ year: 1990, month: 6, date: 20, time: '10:00' }),
+        getDay: jest
+          .fn()
+          .mockResolvedValue({ year: 1990, month: 6, date: 20, time: '10:00' }),
       },
     });
     const result = await svc.getChineseHoroscope8Cycle(
@@ -129,7 +158,13 @@ describe('ChineseHoroscope8SquareService.getChineseHoroscope8Cycle — decade on
       '08:00',
       1990,
     );
-    expect(calendar100YearService.getDay).toHaveBeenCalledWith(1990, 6, 15, '08:00', true);
+    expect(calendar100YearService.getDay).toHaveBeenCalledWith(
+      1990,
+      6,
+      15,
+      '08:00',
+      true,
+    );
     expect(typeof result.birthdayYear).toBe('number');
     expect(result.life.length).toBeGreaterThan(0);
   }, 30000);
@@ -147,7 +182,13 @@ describe('ChineseHoroscope8SquareService.getChineseHoroscope8Cycle — decade on
       '05:12',
       1989,
     );
-    expect(calendar100YearService.getDay).toHaveBeenCalledWith(1989, 1, 3, '05:12', expect.any(Boolean));
+    expect(calendar100YearService.getDay).toHaveBeenCalledWith(
+      1989,
+      1,
+      3,
+      '05:12',
+      expect.any(Boolean),
+    );
     expect(calendar100YearService.getDay.mock.calls[0][0]).toBe(1989);
   }, 30000);
 });
