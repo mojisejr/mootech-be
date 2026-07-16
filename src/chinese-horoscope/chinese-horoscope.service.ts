@@ -433,7 +433,6 @@ export class ChineseHoroscopeService {
           chineseMonthAbove,
           chineseMonthBelow,
           input.gender,
-          year,
           month,
           date,
           time,
