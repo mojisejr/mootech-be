@@ -1343,6 +1343,11 @@ export class ChineseHoroscopeService {
       input.code,
       input.userId,
     );
+    // No saved chart for this code+user is a NORMAL state (new user / old link), not an error. Return an
+    // explicit empty envelope {data:null} — keeps the {data} shape (never bare null, per #167) so 500/502 stay
+    // reserved for genuinely-broken. FE (useV2Home) already reads data:null as "no chart" and falls back
+    // gracefully. A malformed stored row still throws in JSON.parse below = a real 500, which is correct.
+    if (!result) return { data: null };
     return { data: JSON.parse(result.result) };
   }
 
