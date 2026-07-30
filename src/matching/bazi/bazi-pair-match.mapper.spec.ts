@@ -93,8 +93,16 @@ const PM_SAMPLE: BaziPairMatchResponse = {
     aElementTh: 'ดิน',
     bElementTh: 'ไฟ',
     summaryTh: 'ธาตุของทั้งคู่เสริมกันบางส่วน',
-    aToB: { relation: 'resource', labelTh: 'ส่งเสริมดิถี', meaningTh: 'เขาส่งเสริมเรา' },
-    bToA: { relation: 'wealth', labelTh: 'ดิถีพิฆาต', meaningTh: 'เราควบคุมเขา' },
+    aToB: {
+      relation: 'resource',
+      labelTh: 'ส่งเสริมดิถี',
+      meaningTh: 'เขาส่งเสริมเรา',
+    },
+    bToA: {
+      relation: 'wealth',
+      labelTh: 'ดิถีพิฆาต',
+      meaningTh: 'เราควบคุมเขา',
+    },
   },
 };
 
@@ -109,11 +117,30 @@ const PAIR_SAMPLE: BaziPairResponse = {
     elementInteraction: { summaryTh: 'ธาตุของทั้งคู่เสริมกันบางส่วน' },
   },
   facets: [
-    { label: 'เสาวัน', pairingLabel: 'ดิถีคู่', percent: 40, grade: 'D+', found: true, ratingText: 'เข้าใจกันดี ดูแลใจกัน' },
+    {
+      label: 'เสาวัน',
+      pairingLabel: 'ดิถีคู่',
+      percent: 40,
+      grade: 'D+',
+      found: true,
+      ratingText: 'เข้าใจกันดี ดูแลใจกัน',
+    },
     { label: 'เสาปี', percent: null, found: false, ratingText: '' },
-    { label: 'เสาเดือน', pairingLabel: 'เดือนคู่', percent: 30, found: true, ratingText: 'ต้องปรับจูนเรื่องเวลา' },
+    {
+      label: 'เสาเดือน',
+      pairingLabel: 'เดือนคู่',
+      percent: 30,
+      found: true,
+      ratingText: 'ต้องปรับจูนเรื่องเวลา',
+    },
   ],
-  mainFacet: { label: 'เสาวัน', percent: 40, grade: 'D+', isMain: true, ratingText: 'เป็นความสัมพันธ์ที่อบอุ่น เข้าใจกันดี' },
+  mainFacet: {
+    label: 'เสาวัน',
+    percent: 40,
+    grade: 'D+',
+    isMain: true,
+    ratingText: 'เป็นความสัมพันธ์ที่อบอุ่น เข้าใจกันดี',
+  },
 };
 
 describe('toPairMatchPerson / toPairMatchRequest', () => {
@@ -146,9 +173,13 @@ describe('toPairMatchPerson / toPairMatchRequest', () => {
   });
 
   it('maps the matching type to the engine relationship', () => {
-    expect(toPairMatchRequest(ok, ok, 'EMPLOYEE')?.relationship).toBe('subordinate');
+    expect(toPairMatchRequest(ok, ok, 'EMPLOYEE')?.relationship).toBe(
+      'subordinate',
+    );
     expect(toPairMatchRequest(ok, ok, 'FRIEND')?.relationship).toBe('partner');
-    expect(toPairMatchRequest(ok, noTime, 'LOVE')?.personB).not.toHaveProperty('birthTime');
+    expect(toPairMatchRequest(ok, noTime, 'LOVE')?.personB).not.toHaveProperty(
+      'birthTime',
+    );
   });
 });
 
@@ -162,7 +193,9 @@ describe('buildDescFromPairMatch', () => {
   });
 
   it('falls back to overall prose when no dimensions carry text', () => {
-    expect(buildDescFromPairMatch({ overall: { ratingText: 'สรุปรวม' } })).toEqual([{ note: 'สรุปรวม' }]);
+    expect(
+      buildDescFromPairMatch({ overall: { ratingText: 'สรุปรวม' } }),
+    ).toEqual([{ note: 'สรุปรวม' }]);
   });
 
   it('never throws on empty response', () => {
@@ -210,9 +243,17 @@ describe('mapPairMatchToComputeResult — v1 block + whole blob (D7)', () => {
     expect(c.pairMatch).toBe(PM_SAMPLE);
     expect(c.pairMatch.overall?.percent).toBe(40);
     expect(c.pairMatch.dimensions?.length).toBe(3);
-    expect(c.pairMatch.elementInteraction?.aToB).toEqual({ relation: 'resource', labelTh: 'ส่งเสริมดิถี', meaningTh: 'เขาส่งเสริมเรา' });
+    expect(c.pairMatch.elementInteraction?.aToB).toEqual({
+      relation: 'resource',
+      labelTh: 'ส่งเสริมดิถี',
+      meaningTh: 'เขาส่งเสริมเรา',
+    });
     expect(c.pairMatch.elementInteraction?.bToA).toBeTruthy();
-    expect((c.pairMatch.persons?.a as any).fourPillars.day).toEqual({ stem: '己', branch: '巳', element: 'ดิน' });
+    expect((c.pairMatch.persons?.a as any).fourPillars.day).toEqual({
+      stem: '己',
+      branch: '巳',
+      element: 'ดิน',
+    });
     expect((c.pairMatch.persons?.b as any).timeKnown).toBe(false);
   });
 
