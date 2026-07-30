@@ -36,18 +36,16 @@ import { CompatibilityLoveService } from 'src/compatibility-love/compatibility-l
 import { CompatibilityWorkService } from 'src/compatibility-work/compatibility-work.service';
 import { CompatibilityLoveInput } from 'src/compatibility-love/dto/compatibility-love.input';
 // #mootech-matching-bazi-swap: bazi pair engine (env-gated, reversible) + pure mapper.
+// Slice 2B: connector switched from /api/bazi/pair to /api/bazi/pair-match; the /pair
+// adapter/mapper are retained as the documented fallback reference (still unit-tested).
+import { isBaziMatchingEnabled } from 'src/matching/bazi/bazi-pair.adapter';
+import { fetchBaziPairMatch } from 'src/matching/bazi/bazi-pair-match.adapter';
 import {
-  fetchBaziPair,
-  isBaziMatchingEnabled,
-} from 'src/matching/bazi/bazi-pair.adapter';
-import {
-  mapBaziPairToComputeResult,
-  toBaziPairRequest,
-} from 'src/matching/bazi/bazi-pair.mapper';
-import {
-  MatchingComputeResult,
-  MatchingType,
-} from 'src/matching/bazi/bazi-pair.types';
+  mapPairMatchToComputeResult,
+  toPairMatchRequest,
+} from 'src/matching/bazi/bazi-pair-match.mapper';
+import { MatchingType } from 'src/matching/bazi/bazi-pair.types';
+import { PairMatchComputeResult } from 'src/matching/bazi/bazi-pair-match.types';
 import { PowerKnowledgeService } from 'src/power-knowledge/power-knowledge.service';
 import { PowerKnowledgeInput } from 'src/power-knowledge/dto/power-knowledge.input';
 import { PowerFriendlyService } from 'src/power-friendly/power-friendly.service';
@@ -1063,31 +1061,32 @@ export class ChineseHoroscopeService {
     }
   }
 
-  // #mootech-matching-bazi-swap: compute compatibility via the bazi pair engine.
+  // #mootech-matching-bazi-swap: compute compatibility via the bazi pair-match engine.
   // Returns null (so the caller falls back to the legacy table compute) when the
-  // engine is disabled, the input is not usable (e.g. missing birth time), or the
-  // bazi call fails/times out. Read-only against bazi; no engine mutation.
+  // engine is disabled, the input is not usable (missing DATE), or the bazi call
+  // fails/times out. Read-only against bazi; no engine mutation; no astrology logic
+  // here — the mapper only reshapes the response and preserves the whole blob.
   async computeBaziPair(
     _input: CompatibilityLoveAnalyticInput,
     type: MatchingType,
-  ): Promise<MatchingComputeResult | null> {
+  ): Promise<PairMatchComputeResult | null> {
     if (!isBaziMatchingEnabled()) {
       return null;
     }
-    const req = toBaziPairRequest(_input.me, _input.you, type);
+    const req = toPairMatchRequest(_input.me, _input.you, type);
     if (!req) {
       return null;
     }
     try {
-      const resp = await fetchBaziPair(req);
-      const mapped = mapBaziPairToComputeResult(resp, type);
+      const resp = await fetchBaziPairMatch(req);
+      const mapped = mapPairMatchToComputeResult(resp, type);
       if (!mapped.result || mapped.result.score == null) {
         return null;
       }
       return mapped;
     } catch (e) {
       console.error(
-        '[matching][bazi] pair failed, falling back to legacy:',
+        '[matching][bazi] pair-match failed, falling back to legacy:',
         e?.message ?? e,
       );
       return null;
