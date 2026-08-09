@@ -18,9 +18,12 @@
 --     must first acquire ACCESS EXCLUSIVE on "user". On a busy prod a long-running transaction
 --     can make this migration WAIT — and while it waits it queues AHEAD of every reader, so
 --     plain SELECTs on "user" stall behind it (measured >8s; an all-no-op re-run still waited 7s).
---     → `SET lock_timeout = '5s'` bounds that wait: if the lock isn't free in 5s the migration
---       fails fast (ERROR: canceling statement due to lock timeout) and prod reads stay ~100ms.
---       It is safe to re-run once the blocking transaction has cleared.
+--     → `SET lock_timeout = '5s'` does NOT spare readers that arrive WHILE it waits — those still
+--       stall (measured 4,117ms mid-wait). What it does is CAP the damage: without it the stall is
+--       unbounded (>8s and climbing until the blocker clears); with it, the migration self-cancels
+--       at 5s (ERROR: canceling statement due to lock timeout), so the worst-case reader stall is
+--       ≤5s and readers arriving after the cancel are back to ~100ms. Net: unbounded hang → ≤5s.
+--       Safe to re-run once the blocking transaction has cleared.
 --
 -- HOW TO RUN (identical local and prod — see migrations/README.md):
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/2026-08-09_onboarding-consent.sql
@@ -30,10 +33,11 @@
 
 BEGIN;
 
--- Fail fast instead of freezing prod: cap how long we WAIT for ACCESS EXCLUSIVE on "user".
--- Without this, a long-running transaction elsewhere makes this migration wait, and readers
--- queue behind it (measured >8s stalls on a populated table). 5s → fail with a clear lock-timeout
--- error, prod reads unaffected. Re-run after the blocker clears (whole file is idempotent).
+-- Cap — do NOT eliminate — the reader stall while we WAIT for ACCESS EXCLUSIVE on "user".
+-- A long-running transaction elsewhere makes this migration wait; readers queue behind it and
+-- stall (measured 4,117ms mid-wait). Without this the stall is unbounded; 5s self-cancels the
+-- migration with a clear lock-timeout error, so the worst case is ≤5s, not a freeze. Re-run
+-- after the blocker clears (whole file is idempotent).
 SET lock_timeout = '5s';
 
 -- 1 + 2 · user: first-login gate + chosen goal (both nullable; existing users stay NULL = onboarded_at gate re-runs first-run for them, which is correct — they never completed v2 first-run)
