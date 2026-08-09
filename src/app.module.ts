@@ -52,6 +52,7 @@ import { AIModule } from './ai/ai.module';
 import { MemberWithFriendModule } from './member-with-friend/member-with-friend.module';
 import { MatchingModule } from './matching/matching.module';
 import { MigrationModule } from './migration/migration.module';
+import { ConsentModule } from './consent/consent.module';
 import { ChineseCalendarModule } from './chineses-calendar/entity/chinese-calendar.module';
 import { DirectionModule } from './direction/direction.module';
 import { HolidayModule } from './holiday/holiday.module';
@@ -136,6 +137,7 @@ import { MemberPayAsUseModule } from './member-pay-as-use/member-pay-as-use.modu
     MemberWithFriendModule,
     MatchingModule,
     MigrationModule,
+    ConsentModule,
     ChineseCalendarModule,
     DirectionModule,
     HolidayModule,
