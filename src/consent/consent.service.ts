@@ -27,9 +27,12 @@ export class ConsentService {
 
   /**
    * Reject calls to /consent that don't carry the BFF↔BE shared secret. This endpoint
-   * writes a PDPA legal-consent record, so — like ai/consume — only our onboarding BFF
-   * (which already authenticated the user's session) may call it; a direct curl cannot
-   * forge a consent row. Fail-closed: if CONSENT_SECRET is unset, every call is rejected.
+   * writes a PDPA legal-consent record, so — like ai/consume — only a caller that holds
+   * CONSENT_SECRET (our server-side onboarding BFF) can reach it; a direct curl from
+   * outside cannot. This gates the CALLER, not the end user: `user_id` is still trusted
+   * from the body (the BE has no user auth), so this does not prove the user consented —
+   * the identity half is tracked in mootech-fe#252. Fail-closed: if CONSENT_SECRET is
+   * unset, every call is rejected.
    */
   private assertConsentSecret(secret: string): void {
     const expected = process.env.CONSENT_SECRET;
@@ -47,8 +50,8 @@ export class ConsentService {
     input: ConsentCompleteOnboardingInput,
     secret: string,
   ): Promise<any> {
-    // Authorize + validate BEFORE any DB write, so a forged/garbage payload can never
-    // land a bogus PDPA consent row.
+    // Gate + validate BEFORE any DB write: an unauthorized caller is rejected, and an
+    // authorized caller still cannot land an out-of-range goal/policy_version.
     this.assertConsentSecret(secret);
     if (!VALID_GOALS.includes(input.goal)) {
       throw new HttpException(
