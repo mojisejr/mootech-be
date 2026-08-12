@@ -35,7 +35,8 @@ export class MemberWithFriendService {
   ) {}
 
   getLimit = (is_free: boolean): number => {
-    return is_free ? 1 : 20;
+    // เพดานเพื่อนชั่วคราวก่อน launch (ฟีมเคาะ 2026-08-13, #20): free 1 → 20
+    return is_free ? 20 : 20;
   };
 
   async isCheckUsage(
