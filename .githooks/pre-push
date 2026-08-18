@@ -21,7 +21,9 @@
 #   ⚠️ If anyone starts reaching for `--no-verify`, that is the signal this cost is too high: say so in
 #   mojisejr/mootech-fe#320 instead of quietly bypassing.
 #   `build` (nest build, 5s here) is NOT in the hook only to stay symmetric with mootech-fe, where build
-#   costs 4m11s. It is checked once before opening the PR, with its output pasted into the PR body.
+#   costs 41s-408s depending on .next cache (10x spread, measured 5 runs 2026-08-18). It is checked once
+#   before opening the PR, with its output pasted into the PR body. The reason build is excluded there is
+#   the VARIANCE, not the average — an unpredictable wait teaches people to reach for --no-verify.
 #
 # git invokes: pre-push <remote-name> <remote-url>, with stdin lines:
 #   <local ref> SP <local oid> SP <remote ref> SP <remote oid> LF

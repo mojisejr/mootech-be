@@ -28,10 +28,11 @@ your machine.
 | when | what | cost here |
 |---|---|---|
 | every `git push` | `npm run lint` + `npm test` — enforced by `.githooks/pre-push` | ≈ 112s |
-| before opening a PR | `npm run build` — paste the output into the PR body | ≈ 5s |
+| before opening a PR | `npm run build` — paste the output into the PR body | 5s (warm) – 22s (cold) |
 
-`build` is not in the hook so this repo stays symmetric with `mootech-fe`, where build costs 4m11s and a
-normal issue takes 4–5 pushes.
+`build` is not in the hook so this repo stays symmetric with `mootech-fe`, where build costs anywhere from
+41s to 408s depending on cache state (10× spread, 5 runs measured 2026-08-18) — an unpredictable wait in
+front of every push is what teaches people to bypass the hook.
 
 ### `lint` checks, `lint:fix` rewrites
 
