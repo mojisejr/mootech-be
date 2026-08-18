@@ -8,10 +8,20 @@
 - [ ] chore
 - [ ] payment ⚠️ (triggers the FE↔BE sync checklist below)
 
-## Hard Gate (must be green before merge)
-- [ ] Build passes (`npm run build`)
-- [ ] Lint passes (eslint, no-fix)
-- [ ] Tests pass (`npm test`)
+## Hard Gate — run on YOUR machine, not in CI (see mojisejr/mootech-fe#318)
+`lint` + `test` are enforced by `.githooks/pre-push` on every push. `build` is not — check it here.
+
+- [ ] `npm run build` green — **paste the output below** (this is the one nothing enforces)
+- [ ] `npm run lint` green (0 errors; warnings do not fail the gate)
+- [ ] `npm test` green
+- [ ] `git config core.hooksPath` prints `.githooks` on my machine
+
+<details><summary>output of `npm run build`</summary>
+
+```
+paste here
+```
+</details>
 
 ## Deploy impact
 - [ ] I understand: **merge into `main` = production deploy** (Render `autoDeploy`, no separate deploy step)

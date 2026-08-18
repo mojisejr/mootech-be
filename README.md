@@ -1,1 +1,56 @@
 # mootech-be
+
+## Setup
+
+```bash
+npm ci        # this also installs the git hooks (see below)
+```
+
+### The hooks install themselves — but know why, in case they don't
+
+`core.hooksPath` is a **local git config value**, not a file in the repo, so committing `.githooks/pre-push`
+does nothing on your machine on its own. `package.json` has a `prepare` script that runs
+`scripts/install-git-hooks.sh` after `npm install` **and** after `npm ci` (both verified 2026-08-18), which
+points `core.hooksPath` at the main checkout's `.githooks/` with an absolute path — so it covers every
+worktree, existing and future.
+
+It is wrapped in `|| true`: a broken hook install must never break `npm ci`. That means **a silent failure
+here leaves you with no hooks and no error**, so check once:
+
+```bash
+git config core.hooksPath        # must print an absolute path ending in /.githooks
+bash scripts/install-git-hooks.sh   # re-run any time; safe to repeat
+```
+
+## Hard gate — what must be green, and where
+
+Decided in `mojisejr/mootech-fe#318` (2026-08-18). `ci.yml` is being retired: merge into `main` is a
+production deploy (Render `autoDeploy`) and GitHub Actions minutes are paid, so the checks moved onto
+your machine.
+
+| when | what | cost here |
+|---|---|---|
+| every `git push` | `npm run lint` + `npm test` — enforced by `.githooks/pre-push` | ≈ 112s |
+| before opening a PR | `npm run build` — paste the output into the PR body | 5s (warm) – 22s (cold) |
+
+`build` is not in the hook so this repo stays symmetric with `mootech-fe`, where build costs anywhere from
+41s to 408s depending on cache state (10× spread, 5 runs measured 2026-08-18) — an unpredictable wait in
+front of every push is what teaches people to bypass the hook.
+
+### `lint` checks, `lint:fix` rewrites
+
+```bash
+npm run lint      # check only — this is the gate
+npm run lint:fix  # rewrites your source (never run by the hook)
+```
+
+Until `mojisejr/mootech-fe#320` the `lint` script carried `--fix`, so it edited the very code it claimed
+to be checking. If you want the old behaviour, it is `lint:fix` now.
+
+### If the hook blocks you
+
+Fix the red thing. `git push --no-verify` bypasses every hook — it is not a wall — but bypassing means the
+next person to touch `main` inherits whatever you skipped, and `main` deploys straight to production.
+
+If the 112s is genuinely too slow to live with, **say so in `mojisejr/mootech-fe#320`** rather than
+quietly bypassing. Someone reaching for `--no-verify` is the agreed signal that this cost was set wrong.
