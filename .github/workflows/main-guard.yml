@@ -1,0 +1,50 @@
+name: main-guard
+# TRIPWIRE on direct pushes to main. Ported from mootech-fe by mojisejr/mootech-fe#321, which archived this
+# repo's `ci.yml`: the only workflow left here (secret-scan) triggers on `pull_request` only, so a direct push
+# to main would run NOTHING — and merge into main = Render production deploy. This runs whenever main MOVES and
+# goes red loudly if (A) main fails tsc, or (B) main was moved by a direct push instead of a PR merge.
+#
+# 🔴 อ่านชื่อว่า "guard" แล้วอย่าเข้าใจผิด — นี่คือ **backstop หลังบ้าน ไม่ใช่ด่านกั้น** (ตู๋ย้ำตอนรีวิว mootech-fe#321)
+#    `on: push branches:[main]` ⇒ ทุก job ในไฟล์นี้รัน **หลัง** merge เกิดขึ้นแล้ว · และ merge เข้า main = Render
+#    deploy prod ⇒ ตอน job A (tsc) แดง **ของเสียเข้า main และ deploy ไปแล้ว** ไฟล์นี้แค่ตะโกนบอกว่ามันเข้าไปแล้ว
+#    ของที่กัน *ก่อน* ของเสียออกจากเครื่อง คือ `.githooks/pre-push` (lint + test) กับ `npm run build` ที่คนรันเองก่อนขอรีวิว
+#    ⇒ ถ้าอยากให้ tsc กั้นจริง ต้องเอาไปไว้ในสองที่นั้น ❌ ไม่ใช่ที่นี่
+#
+# NOT a required status check — it observes main after the fact; making it required would block unrelated PRs.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  integrity: # job A — main must always pass tsc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: typecheck (tsc --noEmit)
+        run: npx tsc --noEmit
+
+  provenance: # job B — HEAD on main must be a GitHub PR-merge commit, not a direct push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # need HEAD + its parents to count them
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: assert HEAD is a PR merge-commit (names the pusher if not)
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: npx ts-node scripts/assert-main-provenance.ts
