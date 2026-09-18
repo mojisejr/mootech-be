@@ -5,20 +5,10 @@ name: container-build
 # Postgres with SSL and is run locally against the arena before a PR is marked ready; CI says so explicitly
 # rather than printing a green it did not earn.
 #
-# Cost discipline (mootech-fe#318 — CI minutes are paid): path-filtered to container-relevant files, one job,
-# no image push, no registry login. Pushing images is the control room's job (slice 2), not this repo's.
+# Cost discipline (mootech-fe#318 — CI minutes are paid): one job, no image push, no registry login. Pushing images is the control room's job (slice 2), not this repo's.
+# MANUAL ONLY (owner decision 2026-09-19): the launch lane must not see this job on its pull requests and CI
+# minutes are paid. Run it from the Actions tab when a container change needs a second machine's proof.
 on:
-  pull_request:
-    paths:
-      - Dockerfile
-      - .dockerignore
-      - package.json
-      - package-lock.json
-      - src/main.ts
-      - src/runtime-guard.ts
-      - src/health/**
-      - scripts/container-smoke.sh
-      - .github/workflows/container-build.yml
   workflow_dispatch:
 
 permissions:
