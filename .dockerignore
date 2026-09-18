@@ -1,7 +1,25 @@
-node_modules
-dist
-scripts
-.git
+# Nothing that holds a credential or a machine-local state may enter the build context.
+# Every env file spelling, including the arena's shadow copies (mootech-fe/testenv/scripts/stack.sh).
 .env
 .env.*
+*.testenv-shadowed
+.env.disabled
+# Build outputs and caches are produced inside the image, never copied in.
+node_modules
+dist
+coverage
 *.log
+# Repository plumbing the image never reads.
+.git
+.github
+.githooks
+.DS_Store
+scripts
+test
+supabase-migration
+migrations
+render.yaml
+README*.md
+project_map.md
+# Root-level font duplicates: the image copies src/assets/fonts instead.
+*.ttf

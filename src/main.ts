@@ -3,6 +3,16 @@ import { types as pgTypes } from 'pg';
 import { AppModule } from './app.module';
 import { json } from 'express';
 import * as express from 'express';
+import { refuseUnsafeRuntimeEnv } from './runtime-guard';
+
+// Hard runtime invariant (mumate-infra-move-001 slice 1): the process refuses to boot when the env
+// would let TypeORM synchronize a pgloader-migrated schema. Checked BEFORE any module loads or any
+// connection opens, so a wrong env panel produces one line and exit 1 — never DDL.
+const refusal = refuseUnsafeRuntimeEnv();
+if (refusal) {
+  console.error(`[runtime-guard] ${refusal}`);
+  process.exit(1);
+}
 
 // MySQL→Postgres migration fix (#mootech-mysql-pg-migration-audit):
 // node-postgres returns int8/bigint AND COUNT(*) as STRINGS by default. Many columns
