@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
+import { HealthController } from './health/health.controller';
 import { AppService } from './app.service';
 import { DbConfigModule, DbConfigService } from './config/database';
 import { AppConfigModule } from './config/app';
@@ -63,6 +64,7 @@ import { ElementCycleModule } from './element-cycle/element-cycle.module';
 import { FortuneTellingModule } from './fortune-telling/fortune-telling.module';
 import { OmiseConfigModule } from './config/omise';
 import { MemberPayAsUseModule } from './member-pay-as-use/member-pay-as-use.module';
+import { readDbPoolConfig } from './runtime-guard';
 
 @Module({
   imports: [
@@ -78,6 +80,9 @@ import { MemberPayAsUseModule } from './member-pay-as-use/member-pay-as-use.modu
         // NEVER hardcode true on serverless/Supabase — read from DB_SYNCHRONIZE (must be false)
         synchronize: dbConfigService.synchronize,
         ssl: { rejectUnauthorized: false }, // Supabase requires SSL (self-signed chain)
+        // Explicit pool bound (mumate-infra-move-001 slice 1): pg's defaults, but READ from env and
+        // rejected when nonsensical — see runtime-guard.ts. Passed straight to pg.Pool.
+        extra: readDbPoolConfig(),
         logging: dbConfigService.logging,
         autoLoadEntities: true,
         // Bug typeorm synchronize resolve path with Typescript
@@ -148,7 +153,7 @@ import { MemberPayAsUseModule } from './member-pay-as-use/member-pay-as-use.modu
     OmiseConfigModule,
     MemberPayAsUseModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [AppService],
 })
 export class AppModule {}

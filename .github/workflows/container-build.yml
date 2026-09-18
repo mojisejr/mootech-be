@@ -1,0 +1,35 @@
+name: container-build
+# Proves the image still builds from this revision and holds its two boot invariants (mumate-infra-move-001
+# slice 1). Runs scripts/container-smoke.sh --no-db — the SAME script a developer runs locally — so CI and a
+# laptop cannot disagree about what "the image works" means. The database leg (GET /health → db ok) needs a
+# Postgres with SSL and is run locally against the arena before a PR is marked ready; CI says so explicitly
+# rather than printing a green it did not earn.
+#
+# Cost discipline (mootech-fe#318 — CI minutes are paid): path-filtered to container-relevant files, one job,
+# no image push, no registry login. Pushing images is the control room's job (slice 2), not this repo's.
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - package.json
+      - package-lock.json
+      - src/main.ts
+      - src/runtime-guard.ts
+      - src/health/**
+      - scripts/container-smoke.sh
+      - .github/workflows/container-build.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: build + hygiene + DB_SYNCHRONIZE refusal (no database in CI)
+        run: bash scripts/container-smoke.sh --no-db
